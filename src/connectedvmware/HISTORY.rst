@@ -6,7 +6,12 @@ Release History
 
 0.1.11
 ++++++
-Including pwinput in code to workaround the issue with azure cli version >= 2.42.0 in windows installed using MSI.
+Including pwinput in vendored_sdks to workaround the issue with azure cli version >= 2.42.0 in windows installed using MSI.
+The pip package was installed in the vendored_sdks folder using the following command:
+```
+pip install pwinput -t azext_connectedvmware/vendored_sdks/
+```
+
 Issue link: https://github.com/Azure/azure-cli/issues/24781
 
 0.1.10
