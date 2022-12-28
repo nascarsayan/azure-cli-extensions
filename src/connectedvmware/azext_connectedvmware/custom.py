@@ -42,7 +42,7 @@ from .vmware_constants import (
     GUEST_AGENT_PROVISIONING_ACTION_INSTALL,
 )
 
-from .vendored_sdks.models import (
+from .vendored_sdks.connectedvmware.models import (
     DiskMode,
     HardwareProfile,
     IPAddressAllocationMethod,
@@ -77,7 +77,7 @@ from .vendored_sdks.models import (
     HttpProxyConfiguration,
 )
 
-from .vendored_sdks.operations import (
+from .vendored_sdks.connectedvmware.operations import (
     VCentersOperations,
     ResourcePoolsOperations,
     ClustersOperations,
