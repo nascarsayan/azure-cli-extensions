@@ -4,10 +4,10 @@
 # --------------------------------------------------------------------------------------------
 
 import json
-import logging
 import os
 import time
 from typing import Union
+from azure.cli.core import telemetry
 from azure.cli.core.azclierror import (
     ClientError,
     CLIInternalError,
@@ -16,7 +16,7 @@ from azure.cli.core.azclierror import (
 from ._util import (
     AzCli,
     SemanticVersion,
-    ColoredFormatter,
+    TelemetryLogger,
 )
 from ..pwinput import pwinput
 
@@ -74,24 +74,8 @@ class Onboard:
         self.vc_address = None
         self.vc_fqdn = None
         self.vc_port = None
-        logger = logging.getLogger(__name__)
-        fh = logging.FileHandler(self.logfile)
-        fh.setFormatter(
-            logging.Formatter(
-                fmt='%(asctime)s %(levelname)-8s %(name)-12s.%(lineno)-5d %(message)s',
-                datefmt='%Y-%m-%dT%H:%M:%S',
-        ))
-        fh.setLevel(logging.DEBUG)
-        logger.addHandler(fh)
-        sh = logging.StreamHandler()
-        sh.setFormatter(
-            ColoredFormatter('%(asctime)s %(levelname)-8s %(message)s')
-        )
-        sh.setLevel(logging.INFO)
-        logger.addHandler(sh)
-        self.logger = logger
+        self.logger = TelemetryLogger('onboard', self.logfile)
         self.az = AzCli(self.logger, self.logfile).run
-
 
     def run(self):
         self._validate_az()
@@ -100,7 +84,7 @@ class Onboard:
         self._create_custom_location()
         self._connect_vcenter()
         self._log_suceess()
-
+        telemetry.flush()
 
     def _validate_az(self):
         self.logger.info('Validating az version...')
@@ -122,7 +106,6 @@ class Onboard:
         arcappl_ver = extensions[EXT_ARC_APPLIANCE]
         if SemanticVersion(arcappl_ver) < SemanticVersion(MIN_ARC_APPLIANCE_VERSION):
             raise ClientError(f'Current version of {EXT_ARC_APPLIANCE} extension is {arcappl_ver}. Please upgrade {EXT_ARC_APPLIANCE} extension to version {MIN_ARC_APPLIANCE_VERSION} or above using the command `az upgrade`')
-
 
     def _fetch_vcenter_credentials(self):
         creds_ok = all(inp is not None for inp in [self.vc_address, self.vc_username, self.vc_password])
@@ -302,7 +285,7 @@ class Onboard:
         
         assert applObj is not None
         self._appliance_id = applObj['id']
-        
+
         print('Waiting for the appliance to be ready...')
         for i in range(5):
             print("Sleeping for 60 seconds...")
@@ -390,8 +373,7 @@ class Onboard:
         )
         if provState != 'Succeeded':
             raise ClientError(f'Provisioning State of custom location is not succeeded. Current state: {provState}. {SUPPORT_MSG}')
-        
-    
+
     def _connect_vcenter(self):
         self._fetch_vcenter_credentials()
 
