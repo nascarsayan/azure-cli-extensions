@@ -7,16 +7,60 @@
 # az_cli and az_cli_with_retries are two functions which
 # can be used to execute az commands.
 
-from operator import le
 import subprocess, logging
 from functools import total_ordering
 from typing import Union, Tuple
 from azure.cli.core import get_default_cli
 from azure.cli.core import telemetry
 
+class TelemetryLogger(logging.Logger):
+    def __init__(self, name, logfile):
+        super().__init__(name)
+        fh = logging.FileHandler(logfile)
+        fh.setFormatter(
+            logging.Formatter(
+                fmt="%(asctime)s %(levelname)-8s %(name)-12s.%(lineno)-5d %(message)s",
+                datefmt="%Y-%m-%dT%H:%M:%S",
+            )
+        )
+        fh.setLevel(logging.DEBUG)
+        self.addHandler(fh)
+        sh = logging.StreamHandler()
+        sh.setFormatter(ColoredFormatter("%(asctime)s %(levelname)-8s %(message)s"))
+        sh.setLevel(logging.INFO)
+        self.addHandler(sh)
+
+    def _push_telemetry(self, level: int, msg: str):
+        telemetry.set_exception(
+            "AzureArcVMwareOnboarding" + logging.getLevelName(level),
+            fault_type="user",
+            summary=_norm(msg),
+        )
+
+    def debug(self, msg, *args, **kwargs):
+        super().debug(msg, *args, **kwargs)
+        # self._push_telemetry(logging.DEBUG, msg % args)
+
+    def info(self, msg, *args, **kwargs):
+        super().info(msg, *args, **kwargs)
+        # self._push_telemetry(logging.INFO, msg % args)
+
+    def warning(self, msg, *args, **kwargs):
+        super().warning(msg, *args, **kwargs)
+        self._push_telemetry(logging.WARNING, msg % args)
+
+    def error(self, msg, *args, **kwargs):
+        super().error(msg, *args, **kwargs)
+        self._push_telemetry(logging.ERROR, msg % args)
+
+    def critical(self, msg, *args, **kwargs):
+        super().critical(msg, *args, **kwargs)
+        self._push_telemetry(logging.CRITICAL, msg % args)
+
+
 # https://github.com/Azure/iotedgedev/blob/4e51ecdcddd4bdd565312dc72401701a202b4e3f/iotedgedev/azurecli.py#L48
 class AzCli:
-    def __init__(self, logger: logging.Logger, logfile: Union[str, None]=None) -> None:
+    def __init__(self, logger: TelemetryLogger, logfile: Union[str, None]=None) -> None:
         self.logfile = logfile
         self.logger = logger
         self.default_cli = get_default_cli()
@@ -80,52 +124,6 @@ class SemanticVersion:
             return NotImplemented
         return self.version < other.version
 
-
-class TelemetryLogger(logging.Logger):
-    def __init__(self, name, logfile):
-        super().__init__(name)
-        fh = logging.FileHandler(logfile)
-        fh.setFormatter(
-            logging.Formatter(
-                fmt='%(asctime)s %(levelname)-8s %(name)-12s.%(lineno)-5d %(message)s',
-                datefmt='%Y-%m-%dT%H:%M:%S',
-            ))
-        fh.setLevel(logging.DEBUG)
-        self.addHandler(fh)
-        sh = logging.StreamHandler()
-        sh.setFormatter(
-            ColoredFormatter('%(asctime)s %(levelname)-8s %(message)s')
-        )
-        sh.setLevel(logging.INFO)
-        self.addHandler(sh)
-
-    def _push_telemetry(self, level: int, msg: str):
-        telemetry.set_exception(
-            'AzureArcVMwareOnboarding'+ logging.getLevelName(level),
-            fault_type='user', summary=_norm(msg))
-                
-
-    def debug(self, msg, *args, **kwargs):
-        super().debug(msg, *args, **kwargs)
-        self._push_telemetry(logging.DEBUG, msg)
-    
-    def info(self, msg, *args, **kwargs):
-        super().info(msg, *args, **kwargs)
-        self._push_telemetry(logging.INFO, msg)
-
-    def warning(self, msg, *args, **kwargs):
-        super().warning(msg, *args, **kwargs)
-        self._push_telemetry(logging.WARNING, msg)
-
-    def error(self, msg, *args, **kwargs):
-        super().error(msg, *args, **kwargs)
-        self._push_telemetry(logging.ERROR, msg)
-
-    def critical(self, msg, *args, **kwargs):
-        super().critical(msg, *args, **kwargs)
-        self._push_telemetry(logging.CRITICAL, msg)
-
-
 class ColoredFormatter(logging.Formatter):
     default_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
     def __init__(self, format: str=default_format):
@@ -149,15 +147,8 @@ class ColoredFormatter(logging.Formatter):
 
 def _remove_cmd_chars(s):
     if isinstance(s, str):
-        return s.replace("'", '_').replace('"', '_').replace('\r\n', ' ').replace('\n', ' ')
-    return s
-
-
-def _remove_symbols(s):
-    if isinstance(s, str):
-        for c in '$%^&|':
-            s = s.replace(c, '_')
+        return s.replace("'", '`').replace('"', '`').replace('\r\n', ' ').replace('\n', ' ')
     return s
 
 def _norm(s):
-    return _remove_symbols(_remove_cmd_chars(s))
+    return _remove_cmd_chars(s)
