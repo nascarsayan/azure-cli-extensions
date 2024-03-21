@@ -11,7 +11,7 @@ from ._client_factory import (
     cf_virtual_network,
     cf_virtual_machine_template,
     cf_virtual_machine_instance,
-    cf_inventory_item,
+    cf_inventory_item_new,
     cf_vminstance_guest_agent,
     cf_cluster,
     cf_datastore,
@@ -29,7 +29,7 @@ def load_command_table(self: AzCommandsLoader, _):
         g.custom_command('list', 'list_vcenter')
 
     with self.command_group(
-        'connectedvmware vcenter inventory-item', client_factory=cf_inventory_item
+        'connectedvmware vcenter inventory-item', client_factory=cf_inventory_item_new
     ) as g:
         g.custom_show_command('show', 'show_inventory_item')
         g.custom_command('list', 'list_inventory_item')

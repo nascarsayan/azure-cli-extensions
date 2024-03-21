@@ -7,12 +7,17 @@ from azure.cli.core.commands.client_factory import get_mgmt_service_client
 from azure.cli.core import AzCli
 # Client factory for vmware clients.
 from .vendored_sdks.connectedvmware import AzureArcVMwareManagementServiceAPI
+from .vendored_sdks.connectedvmware_new import AzureArcVMwareManagementServiceAPI as AzureArcVMwareManagementServiceAPI_new
 from .vendored_sdks.hybridcompute import HybridComputeManagementClient
 from .vendored_sdks.resourcegraph import ResourceGraphClient
 
 
 def cf_connectedvmware(cli_ctx: AzCli, *_) -> AzureArcVMwareManagementServiceAPI:
     return get_mgmt_service_client(cli_ctx, AzureArcVMwareManagementServiceAPI)
+
+
+def cf_connectedvmware_new(cli_ctx: AzCli, *_) -> AzureArcVMwareManagementServiceAPI_new:
+    return get_mgmt_service_client(cli_ctx, AzureArcVMwareManagementServiceAPI_new)
 
 
 def cf_hybridcompute(cli_ctx: AzCli, *_) -> HybridComputeManagementClient:
@@ -80,6 +85,13 @@ def cf_inventory_item(cli_ctx: AzCli, *_):
     Client factory for inventory items.
     """
     return cf_connectedvmware(cli_ctx).inventory_items
+
+
+def cf_inventory_item_new(cli_ctx: AzCli, *_):
+    """
+    Client factory for inventory items with new autorest.
+    """
+    return cf_connectedvmware_new(cli_ctx).inventory_items
 
 
 def cf_vminstance_guest_agent(cli_ctx: AzCli, *_):
